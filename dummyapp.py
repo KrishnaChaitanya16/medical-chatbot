@@ -13,8 +13,6 @@ import gtts
 import playsound 
 from os.path import exists
 import time
-import requests  # Add this import statement
-
 text_speech = pyttsx3.init()
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -25,7 +23,7 @@ PINECONE_API_ENV = 'gcp-starter'
 
 embeddings = download_hugging_face_embeddings()
 
-# Initializing the Pinecone
+#Initializing the Pinecone
 # Set your Pinecone API key
 os.environ["PINECONE_API_KEY"] = "784c0e1f-3e6b-435a-841a-2389c2c0c84c"
 
@@ -34,11 +32,8 @@ pc = pinecone.Pinecone(api_key="784c0e1f-3e6b-435a-841a-2389c2c0c84c")
 
 index_name = "medical"
 
-# Loading the index
+#Loading the index
 docsearch = Pinecone.from_existing_index(index_name, embeddings)
-
-# Define the prompt template
-
 
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
 
@@ -55,15 +50,7 @@ qa = RetrievalQA.from_chain_type(
     retriever=docsearch.as_retriever(search_kwargs={'k': 2}),
     return_source_documents=True, 
     chain_type_kwargs=chain_type_kwargs)
-
 symp = ' '
-
-# Mappls API key
-MAPPLS_API_KEY = '7cd126cb40ffcdf277dd8d66859f57b1'
-
-# Mappls API endpoint for specialist search
-MAPPLS_API_ENDPOINT = 'https://api.mapps.com/v4/search/by-category'
-
 @app.route("/")
 def index():
     session.clear()  # Clear session data
@@ -79,18 +66,32 @@ def chat():
     if 'state' not in session:
         # Introduction message
         j = 0
-        msg = "Namaste! This is ManasMythri. How may I help you?"
+        msg = "Namaste! This is ManasMythri. How may I help you?Is it an emergency ?"
         generate_voice_output(msg)
         session['state'] = 'ask_past_history'
-        return "Namaste! This is ManasMythri. How may I help you?"
+        return "Namaste! This is ManasMythri. How may I help you? Is it an emergency ?"
 
     elif session['state'] == 'ask_past_history':
         # Process past history and ask for symptoms
         session['past_history'] = input_text
+        lowe = input_text.lower()
+        if(lowe == 'yes'):
+            session['state'] = 'emergency'
+            msg = 'Please tell me immediately, the symptoms patient is going through'
+            generate_voice_output(msg)
+            return "Please tell me immediately, the symptoms patient is going through."
         session['state'] = 'ask_current_symptoms'
         msg = "Please describe your current symptoms."
         generate_voice_output(msg)
         return "Please describe your current symptoms."
+    
+    elif session['state'] == 'emergency':
+        msg = input_text + 'Please give me the immediate guidance.'
+        response = qa({"query": msg})
+        print(response)  # Print the response object for debugging
+        generate_voice_output(response["result"])  # Assuming response["result"] contains the text to be spoken
+        session['state'] = 'haha'
+        return response["result"]
 
     elif session['state'] == 'ask_current_symptoms':
         # Process symptoms and get answer
@@ -112,28 +113,11 @@ def chat():
         return response["result"]
     
     elif session['state'] == 'specialists':
-        session['specialists'] = symp + ' For this disease, in one word suggest me the specialists whom I need to consult.'
-        generate_voice_output(session['specialists'])
-        
-        # Get the specialist type from session data
-        specialist_type = session.get('specialist_name', '')
-        
-        if specialist_type:
-            # Call find_specialists function to get specialist information
-            location = "Bengaluru, India"  # Or provide latitude/longitude as a dictionary
-            specialists = find_specialists(location, specialist_type)
-            
-            if specialists:
-                # Format specialist information as a response
-                response = "\n".join([f"{specialist['name']}, Rating: {specialist['rating']}, Address: {specialist['address']}" for specialist in specialists])
-            else:
-                response = "No specialists found in the area."
-            
-            session['state'] = 'dummy'
-            return response
-        else:
-            session['state'] = 'dummy'
-            return "No specialist type found in session data."
+        session['specialists'] = symp + 'For this disease, in one word suggest me the specialists whom I need to consult.'
+        response = qa({"query": session['specialists']})
+        generate_voice_output(response["result"])
+        session['state'] = 'dummy'
+        return response["result"]
     
     elif session['state'] == 'dummy':
         session['specialists'] = 'Thank You For Consulting Me. ManasMythri will like to help you always.'
@@ -141,87 +125,49 @@ def chat():
         session['state'] = 'haha'
         return session['specialists']
     
+    elif session['state'] == 'haha':
+        session['haha'] = 'Thankyou. I hope you will recover soon.'
+        generate_voice_output(session['haha'])
+        session.clear()
+        return session['haha']
+
     return "Invalid state"
 
 def generate_voice_output(text):
     """Generate voice output for the provided text."""
-    sound = gtts.gTTS(text, lang="en")
-    
-    file_exists = exists("response1.mp3")
+    if text:  # Check if text is not empty or None
+        sound = gtts.gTTS(text, lang="en")
+        
+        file_exists = exists("response1.mp3")
 
-    if not file_exists:
-        sound.save("response1.mp3")
+        if not file_exists:
+            sound.save("response1.mp3")
+        else:
+            sound.save("response2.mp3")
+        
+        # Play audio file asynchronously
+        if not file_exists:
+            playsound.playsound("response1.mp3", block=False)
+        else:
+            playsound.playsound("response2.mp3", block=False)
+        
+        time.sleep(1)
+        # Delete audio file
+        if not file_exists:
+            os.remove('response1.mp3')
+        else:
+            os.remove('response2.mp3')
     else:
-        sound.save("response2.mp3")
-    
-    # Play audio file asynchronously
-    if not file_exists:
-        playsound.playsound("response1.mp3", block=False)
-    else:
-        playsound.playsound("response2.mp3", block=False)
-    
-    time.sleep(1)
-    # Delete audio file
-    if not file_exists:
-        os.remove('response1.mp3')
-    else:
-        os.remove('response2.mp3')
-    
-    return
+        print("No text to speak")
 
-def find_specialists(location, specialist_type):
-    """
-    Fetches specialist information near the user's location using Mappls API.
 
-    Args:
-        location (str): User's location (city, zip code, address).
-        specialist_type (str): Type of specialist to search for.
-
-    Returns:
-        list: A list of dictionaries containing details of the top 3 specialists,
-              or an empty list if no specialists are found.
-
-    Raises:
-        requests.exceptions.RequestException: If an error occurs during the API request.
-    """
-
-    params = {
-        "apiKey": MAPPLS_API_KEY,
-        "category": specialist_type
-    }
-
-    # Geocoding API endpoint to convert location to coordinates (optional)
-    if not isinstance(location, dict):
-        geocode_url = f"https://api.mapps.com/v4/geocode/forward?apiKey={MAPPLS_API_KEY}&query={location}"
-        geocode_response = requests.get(geocode_url)
-        geocode_response.raise_for_status()  # Raise exception for non-200 status codes
-
-        location_data = geocode_response.json()
-        latitude = location_data["latitude"]
-        longitude = location_data["longitude"]
-
-        # Update params with coordinates if geocoding is successful
-        params.update({"latitude": latitude, "longitude": longitude})
-
-    try:
-        response = requests.get(MAPPLS_API_ENDPOINT, params=params)
-        response.raise_for_status()  # Raise exception for non-200 status codes
-
-        search_data = response.json()
-        top_three_specialists = []
-
-        # Process search data to extract top 3 specialists (refer to Mappls docs)
-        for place in search_data["places"][:3]:
-            name = place.get("name", "NA")
-            rating = place.get("rating", "NA")
-            address = place.get("address", "NA")
-            top_three_specialists.append({"name": name, "rating": rating, "address": address})
-
-        return top_three_specialists
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching specialists from Mappls API: {e}")
-        return []  # Return empty list on error
+def recommend_medicines(symptoms):
+    """Recommend medicines based on symptoms."""
+    msg = symptoms + "Suggest few medicines."
+    response = qa({"query": msg})
+    generate_voice_output(response["result"])
+    return response["result"]
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080, debug=True)
+
