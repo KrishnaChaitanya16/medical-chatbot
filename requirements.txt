@@ -1,0 +1,11 @@
+ctransformers
+sentence-transformers
+pinecone-client
+langchain
+flask
+pypdf
+python-dotenv
+pyttsx3
+gtts
+playsound
+
