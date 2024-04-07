@@ -2,9 +2,7 @@
 # ManasMythri - A Medical Chatbot
 
 Our Medical Chatbot is designed to provide users with convenient access to medical information and assistance. With features such as symptom checking, medication information, health tips and emergency guidance, our chatbot aims to offer comprehensive support for various health-related inquiries. Users can initiate conversations with the chatbot, receiving prompt and accurate responses to their queries.
-
-
-
+Our model's training is based on the exhaustive content of Harrison's Principles of Internal Medicine, 21st edition, which spans 15,164 pages. This comprehensive source equips our model with a deep understanding of various medical concepts and practices, ensuring informed responses across a wide range of medical inquiries.
 ## Track and Contributors
 Track is Machine Learning
 
@@ -32,7 +30,7 @@ Our aim is to create a medical chatbot which should triage symptoms efficiently,
 
 6. It suggests you with all the medicines on the basis of the symptoms,the patient is suffering with.
 
-7. 
+
 
 ## Tech Stack
 
