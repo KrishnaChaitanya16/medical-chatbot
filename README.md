@@ -20,7 +20,7 @@ Our aim is to create a medical chatbot which should triage symptoms efficiently,
 ## Features
 1. The chatbot asks users about their symptoms in a conversational manner and use this information to suggest potential conditions or recommend appropriate next steps.
 
-2. Users can interact with the chatbot by speaking instead of typing, making the interaction more convenient.
+2. Users can interact with the chatbot by speaking instead of typing, making the interaction more convenient.Which makes our chat bot easily usable for visually impaired. 
 
 3. A good application with nice user interface has been developed.
 
